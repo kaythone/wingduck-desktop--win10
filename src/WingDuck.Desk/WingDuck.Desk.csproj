@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- 托盘用 WindowsDesktop 共享框架里的 NotifyIcon（DESIGN §12 第 3 条），
+         开这个开关不引入任何 NuGet 包 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- AssemblyName 用连字符：产物必须叫 wingduck-desktop.exe（对外标识，DESIGN §16）
+         RootNamespace 用点号：C# 命名空间不允许连字符。两套名字刻意不一致，别统一 -->
+    <AssemblyName>wingduck-desktop</AssemblyName>
+    <RootNamespace>WingDuck.Desk</RootNamespace>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <Version>0.2.3</Version>
+    <Product>wingduck-desktop</Product>
+    <AssemblyTitle>wingduck-desktop</AssemblyTitle>
+    <!-- exe 文件图标（资源管理器、Alt+Tab 里看到的那个）。与下面的 Resource 同源一个文件，
+         不往项目目录里再拷一份，免得两份 ico 各自漂移 -->
+    <ApplicationIcon>..\..\assets\wingduck.ico</ApplicationIcon>
+    <!-- 主程序禁止引入第三方包（DESIGN §12）：任何 PackageReference 都要先问用户 -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <!-- WFAC010 是 WinForms 分析器让把高 DPI 声明从 app.manifest 挪到 ApplicationHighDpiMode。
+         这条建议对本项目是错的：PerMonitorV2 由 WPF 从 manifest 读（spike 实测过，DESIGN §5.3），
+         而这里引 WinForms 只为一个 NotifyIcon。关掉它，保住"零警告"的自证口径。 -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WindowsDesktop SDK 因为 System.Windows.Shapes.Path 与 System.IO.Path 撞名，
+         把 System.IO 从隐式 using 里摘掉了，结果逻辑类里连 File/Directory 都用不了。
+         这里换回来：XAML 生成的代码本来就写全限定名，不需要 Shapes。 -->
+    <Using Include="System.IO" />
+    <Using Remove="System.Windows.Shapes" />
+    <!-- UseWindowsForms 会把 System.Windows.Forms / System.Drawing 也塞进隐式 using，
+         于是 Point、Color、TextBox、DragDropEffects、Orientation 全变成二义名（11 个 CS0104）。
+         这里整体摘掉：全工程只有 TrayIcon.cs 需要 WinForms，它自己写显式 using + 别名。 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Link 决定资源在 WPF 资源表里的名字：不写 Link 的话，项目外的文件会带着 "../.." 进名字，
+         pack://application:,,,/assets/wingduck.ico 就解析不到（托盘与窗口图标都靠这条 URI 取图） -->
+    <Resource Include="..\..\assets\wingduck.ico" Link="assets\wingduck.ico" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,6 @@
+<Application x:Class="WingDuck.Desk.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 不用 StartupUri：主窗口要等单实例判定通过后才创建（T15），由 OnStartup 手动 Show -->
+    <Application.Resources />
+</Application>

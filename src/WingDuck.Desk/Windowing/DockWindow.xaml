@@ -1,0 +1,111 @@
+<Window x:Class="WingDuck.Desk.Windowing.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:win="clr-namespace:WingDuck.Desk.Windowing"
+        xmlns:items="clr-namespace:WingDuck.Desk.Items"
+        Title="wingduck-desktop"
+        Icon="pack://application:,,,/wingduck-desktop;component/assets/wingduck.ico"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False"
+        WindowStartupLocation="Manual"
+        Background="Transparent"
+        Left="240" Top="240" Width="80" Height="320"
+        AllowDrop="True">
+    <!-- 背景右键菜单（v1.2 条目 5b）：整条侧栏上任何一处右键都能拉出新栏。
+         压在条目上时命中的是 ItemsControl 自己那份菜单（离得近者优先），所以这里只放与条目无关的一项。 -->
+    <Window.ContextMenu>
+        <ContextMenu x:Name="BarMenu">
+            <MenuItem Header="新增卡片栏" Click="OnMenuAddCard" />
+        </ContextMenu>
+    </Window.ContextMenu>
+    <Window.Resources>
+        <win:IconConverter x:Key="IconOf" />
+        <!-- 条目块 64×64、图标 48、间距 8（DESIGN §8.1）。失效条目置灰并加 ⚠ 前缀，
+             但仍在列表里——用户可能只是临时拔了移动盘（§7.1） -->
+        <DataTemplate x:Key="ItemTemplate" DataType="{x:Type items:DockItem}">
+            <Border x:Name="Card" Width="64" Height="64" Margin="0" Background="Transparent"
+                    BorderBrush="Transparent" BorderThickness="1" CornerRadius="8"
+                    ToolTip="{Binding Path}" Cursor="Hand">
+                <StackPanel VerticalAlignment="Center">
+                    <Image x:Name="Glyph" Source="{Binding Path, Converter={StaticResource IconOf}}"
+                           Width="48" Height="48" HorizontalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock x:Name="Label" Text="{Binding Name}" FontSize="11"
+                               Foreground="#E6FFFFFF" TextTrimming="CharacterEllipsis"
+                               TextAlignment="Center" Margin="0,2,0,0" />
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <!-- 描边常驻、只换颜色：改 BorderThickness 会让 64×64 的卡片里那 1px 抖动，划过时看着像跳动 -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Card" Property="BorderBrush" Value="#80FFFFFF" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                    <Setter TargetName="Glyph" Property="Opacity" Value="0.35" />
+                    <Setter TargetName="Label" Property="Text" Value="{Binding Name, StringFormat='⚠ {0}'}" />
+                    <Setter TargetName="Label" Property="Foreground" Value="#80FFFFFF" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- 玻璃感全部自绘：系统 acrylic/blur 在 Win10 已实测做不到（DESIGN §3.1 / ADR-2）。
+         #9E = 158/255 ≈ 62% 色罩不透明度，取自 DESIGN §8.1 -->
+    <Border x:Name="Shell" CornerRadius="10" Background="#9E1B262C"
+            BorderBrush="#2EFFFFFF" BorderThickness="1" SnapsToDevicePixels="True">
+        <Grid>
+            <!-- 滚动条一律 Hidden：80px 侧栏放不下 17px 的系统滚动条（会把 64px 条目压扁）。
+                 Hidden 只是不画条，滚轮照样能滚，超出屏幕的条目靠它兜底 -->
+            <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Hidden" Margin="8,20,8,8">
+                <ItemsControl x:Name="ItemList" ItemTemplate="{StaticResource ItemTemplate}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="{Binding PanelOrientation, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="Margin" Value="0,0,0,8" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ContextMenu>
+                        <ContextMenu x:Name="ItemMenu" Opened="OnMenuOpened">
+                            <MenuItem Header="打开" Click="OnMenuOpen" />
+                            <MenuItem Header="打开所在位置" Click="OnMenuReveal" />
+                            <MenuItem Header="重命名" Click="OnMenuRename" />
+                            <Separator />
+                            <MenuItem Header="从侧栏移除" Click="OnMenuRemove" />
+                            <Separator />
+                            <!-- 条目 8：右键任意条目即可再拉一条侧栏，不必先把清单清空 -->
+                            <MenuItem x:Name="AddCardMenuItem" Header="新增卡片栏" Click="OnMenuAddCard" />
+                        </ContextMenu>
+                    </ItemsControl.ContextMenu>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- 顶部一条拖动热区：整窗可拖会吃掉条目点击（DESIGN §9） -->
+            <Grid x:Name="DragHandle" Height="18" VerticalAlignment="Top" Background="Transparent">
+                <Rectangle Fill="Transparent" Cursor="SizeAll" />
+                <!-- 从左到右：钉住 📌、删除 ✕（仅非原始侧栏）、隐藏 — -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="PinButton" Content="📌" Width="18" Height="16" FontSize="10"
+                            Margin="0,0,4,0"
+                            Foreground="#80FFFFFF" Background="Transparent" BorderThickness="0"
+                            Cursor="Arrow" Click="OnPinClick" ToolTip="钉住：停在这儿，不再贴边收起" />
+                    <Button x:Name="DeleteButton" Content="✕" Width="18" Height="16" FontSize="10"
+                            Margin="0,0,4,0"
+                            Foreground="#80FFFFFF" Background="Transparent" BorderThickness="0"
+                            Cursor="Arrow" Click="OnDeleteClick" ToolTip="删除这条侧栏（不动原文件）" />
+                    <Button x:Name="HideButton" Content="—" Width="18" Height="16" FontSize="10"
+                            Foreground="#80FFFFFF" Background="Transparent" BorderThickness="0"
+                            Cursor="Arrow" Click="OnHideClick" ToolTip="隐藏到托盘" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock x:Name="EmptyHint" Text="把桌面图标拖进来" Foreground="#B3FFFFFF" FontSize="11"
+                       TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center"
+                       IsHitTestVisible="False" />
+        </Grid>
+    </Border>
+</Window>

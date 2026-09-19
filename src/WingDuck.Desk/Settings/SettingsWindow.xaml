@@ -1,0 +1,49 @@
+<Window x:Class="WingDuck.Desk.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="wingduck-desktop 设置"
+        Icon="pack://application:,,,/wingduck-desktop;component/assets/wingduck.ico"
+        Width="380" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        Background="#1B262C" TextElement.Foreground="#ECF0F1"
+        FontSize="12">
+    <StackPanel Margin="16,14,16,16">
+        <TextBlock Text="手感即时生效，改完直接关窗" Foreground="#80FFFFFF" FontSize="11" Margin="0,0,0,10" />
+
+        <!-- 三条延时 + 一条色罩：数值口径与 DESIGN §8.2 一致，上限由 SettingsStore.Normalize 夹 -->
+        <TextBlock><Run Text="色罩不透明度" /><Run x:Name="VeilValue" Text=" 158" Foreground="#80FFFFFF" /></TextBlock>
+        <Slider x:Name="Veil" Minimum="0" Maximum="255" IsSnapToTickEnabled="True"
+                ValueChanged="OnSlider" />
+
+        <TextBlock Margin="0,10,0,0"><Run Text="落位后收起延时" /><Run x:Name="CollapseValue" Text=" 400 ms" Foreground="#80FFFFFF" /></TextBlock>
+        <Slider x:Name="CollapseDelay" Minimum="50" Maximum="5000" TickFrequency="50"
+                IsSnapToTickEnabled="True" ValueChanged="OnSlider" />
+
+        <TextBlock Margin="0,10,0,0"><Run Text="悬停展开确认" /><Run x:Name="ExpandValue" Text=" 180 ms" Foreground="#80FFFFFF" /></TextBlock>
+        <Slider x:Name="ExpandHover" Minimum="0" Maximum="2000" TickFrequency="10"
+                IsSnapToTickEnabled="True" ValueChanged="OnSlider" />
+
+        <TextBlock Margin="0,10,0,0"><Run Text="离开后收回延时" /><Run x:Name="RecollapseValue" Text=" 700 ms" Foreground="#80FFFFFF" /></TextBlock>
+        <Slider x:Name="Recollapse" Minimum="100" Maximum="10000" TickFrequency="100"
+                IsSnapToTickEnabled="True" ValueChanged="OnSlider" />
+
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="原始侧栏吸附的边（其它栏直接拖到想要的边上）" />
+                <ComboBox x:Name="EdgeBox" Width="120" HorizontalAlignment="Left" Margin="0,4,0,0"
+                          SelectionChanged="OnChanged">
+                    <ComboBoxItem Content="左" />
+                    <ComboBoxItem Content="右" />
+                    <ComboBoxItem Content="上" />
+                    <ComboBoxItem Content="下" />
+                </ComboBox>
+            </StackPanel>
+            <CheckBox x:Name="AutoStartBox" Grid.Column="1" Content="开机自启" VerticalAlignment="Bottom"
+                      Margin="0,0,0,4" Checked="OnChanged" Unchecked="OnChanged" />
+        </Grid>
+    </StackPanel>
+</Window>
